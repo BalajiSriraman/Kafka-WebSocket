@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import React, { useState } from "react";
+import React from "react";
 
 interface AnimatedSubscribeButtonProps {
   buttonColor: string;

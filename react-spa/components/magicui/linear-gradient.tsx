@@ -1,5 +1,4 @@
 import { CSSProperties } from "react";
-import React from "react";
 type Direction =
   | "top"
   | "bottom"

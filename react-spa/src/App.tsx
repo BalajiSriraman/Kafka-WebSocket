@@ -14,6 +14,7 @@ import {
   getSnapshot,
   loadSnapshot,
   throttle,
+  Editor,
 } from "tldraw";
 import "tldraw/tldraw.css";
 import { Core } from "models";
@@ -34,6 +35,7 @@ const App: FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const storeRef = useRef(createTLStore());
+  const editorRef = useRef<Editor | null>(null);
   const [, forceUpdate] = useState({});
 
   const [id, setId] = useState(
@@ -85,6 +87,13 @@ const App: FC = () => {
       setSearchParams({ host: String(isHost) });
     }
   }, [id, isHost, uniqueName, isShared, setSearchParams]);
+
+  useEffect(() => {
+    if (editorRef.current) {
+      const isReadonly = isShared ? !isHost : false;
+      editorRef.current.updateInstanceState({ isReadonly });
+    }
+  }, [isHost, isShared]);
 
   const applySnapshot = useCallback((snapshot: any) => {
     loadSnapshot(storeRef.current, snapshot);
@@ -143,7 +152,7 @@ const App: FC = () => {
         const snapshot = getSnapshot(storeRef.current);
         localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(snapshot));
 
-        if (isHost) {
+        if (isHost && isShared) {
           sendUpdate(snapshot);
         }
       }, 500),
@@ -152,7 +161,7 @@ const App: FC = () => {
     return () => {
       cleanupFn();
     };
-  }, [isHost]);
+  }, [isHost, isShared]);
 
   const sendUpdate = useCallback(
     (snapshot: any) => {
@@ -208,13 +217,15 @@ const App: FC = () => {
       if (newIsShared) {
         const newId = generateId();
         setId(newId);
-        navigate(`/${newId}?host=${isHost}`);
+        navigate(`/${newId}?host=true`);
+        setIsHost(true); // Set as host when starting to share
       } else {
         navigate("/");
+        setIsHost(false); // Reset host status when stopping sharing
       }
       return newIsShared;
     });
-  }, [navigate, isHost]);
+  }, [navigate]);
 
   const regenerateUniqueName = useCallback(() => {
     const newName = getUniqueName();
@@ -229,16 +240,14 @@ const App: FC = () => {
         if (data.type === "snapshot") {
           if (data.uniqueName !== uniqueName) {
             setIsHost(false);
-            if (!isHost) {
-              applySnapshot(data.snapshot);
-            }
+            applySnapshot(data.snapshot);
           }
         }
       } catch (error) {
         console.error("Error processing WebSocket data:", error);
       }
     }
-  }, [wsMessage, applySnapshot, isHost, uniqueName]);
+  }, [wsMessage, applySnapshot, uniqueName]);
 
   if (loadingState.status === "loading") {
     return (
@@ -320,7 +329,14 @@ const App: FC = () => {
         </div>
       </div>
       <div style={{ position: "absolute", inset: 0 }} className="mt-[3.75rem]">
-        <Tldraw store={storeRef.current} />
+        <Tldraw
+          onMount={(editor) => {
+            editorRef.current = editor;
+            const isReadonly = isShared ? !isHost : false;
+            editor.updateInstanceState({ isReadonly });
+          }}
+          store={storeRef.current}
+        />
       </div>
     </div>
   );
