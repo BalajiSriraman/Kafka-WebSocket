@@ -12,6 +12,10 @@ app.use(cors())
 
 const PORT = (process.env.PORT ?? '8000') as string
 
+app.get('/', (_, res) => {
+  res.status(200).send('Ping! O Pong!')
+})
+
 app.listen(PORT, async () => {
   await initTopic()
   await startWSS()

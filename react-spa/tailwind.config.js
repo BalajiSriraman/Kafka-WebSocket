@@ -9,8 +9,17 @@ export default {
     extend: {
       animation: {
         meteor: "meteor 5s linear infinite",
+        ripple: "ripple 3400ms ease infinite",
       },
       keyframes: {
+        ripple: {
+          "0%, 100%": {
+            transform: "translate(-50%, -50%) scale(1)",
+          },
+          "50%": {
+            transform: "translate(-50%, -50%) scale(0.9)",
+          },
+        },
         meteor: {
           "0%": { transform: "rotate(215deg) translateX(0)", opacity: 1 },
           "70%": { opacity: 1 },

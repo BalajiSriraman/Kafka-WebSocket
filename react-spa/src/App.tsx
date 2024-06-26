@@ -23,7 +23,7 @@ import { generateId } from "../lib/getId";
 import { getUniqueName } from "../lib/generateName";
 import { useWs } from "../composables/wsClient";
 import { AnimatedSubscribeButton } from "../components/magicui/animated-subscribe-button";
-import { CheckIcon, ChevronRightIcon, RefreshCcw } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, Loader, RefreshCcw } from "lucide-react";
 import Meteors from "../components/magicui/meteors";
 import LinearGradient from "../components/magicui/linear-gradient";
 
@@ -50,6 +50,10 @@ const App: FC = () => {
     () => localStorage.getItem("uniqueName") || getUniqueName(),
   );
 
+  const [isHostAvailable, setIsHostAvailable] = useState<
+    "available" | "unavailable" | "unknown"
+  >("unknown");
+
   const [loadingState, setLoadingState] = useState<
     | { status: "loading" }
     | { status: "ready" }
@@ -67,6 +71,20 @@ const App: FC = () => {
       ? new BroadcastChannel("tldraw-sync")
       : null,
   );
+
+  useEffect(() => {
+    fetch("http://localhost:8000")
+      .then((res) => {
+        if (res.ok) {
+          setIsHostAvailable("available");
+        } else {
+          setIsHostAvailable("unavailable");
+        }
+      })
+      .catch(() => {
+        setIsHostAvailable("unavailable");
+      });
+  });
 
   useEffect(() => {
     if (paramId) {
@@ -266,25 +284,9 @@ const App: FC = () => {
     );
   }
 
-  return (
-    <div className="">
-      <div className="flex items-center justify-between border-b border-gray-400 p-1 px-2 py-3">
-        <LinearGradient />
-        <div className="bg-background bordermd:shadow-xl relative flex items-center justify-center overflow-hidden rounded-lg">
-          <Meteors number={50} />
-          <p className="z-10 w-full whitespace-pre-wrap pb-1 pl-2 pr-5 text-center font-medium tracking-tighter text-black">
-            The Board
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <p>{uniqueName}</p>
-          <div
-            className="flex cursor-pointer items-center justify-center rounded-md p-1 transition-colors duration-300 ease-in-out hover:bg-gray-100"
-            onClick={regenerateUniqueName}
-          >
-            <RefreshCcw className="h-3 w-3 text-gray-800" />
-          </div>
-        </div>
+  const HandleRight = () => {
+    if (isHostAvailable == "available") {
+      return (
         <div className="flex items-center justify-center space-x-4">
           {isShared && (
             <>
@@ -327,6 +329,63 @@ const App: FC = () => {
             }
           />
         </div>
+      );
+    }
+
+    if (isHostAvailable === "unavailable") {
+      return (
+        <div className="flex items-center justify-center space-x-4">
+          <div
+            className="rounded
+            bg-gradient-to-r
+            from-red-400 
+            p-2
+            font-semibold
+            text-gray-800
+          "
+          >
+            Kafka Server Unavialable 💀
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-center space-x-4">
+        <div
+          className="rounded
+          p-3
+          font-semibold
+          text-gray-800"
+        >
+          <div>
+            <Loader className="h-4 w-4 animate-spin text-gray-800" />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between border-b border-gray-400 p-1 px-2 py-3">
+        <LinearGradient />
+        <div className="bg-background bordermd:shadow-xl relative flex items-center justify-center overflow-hidden rounded-lg">
+          <Meteors number={50} />
+          <p className="z-10 w-full whitespace-pre-wrap pb-1 pl-2 pr-5 text-center font-medium tracking-tighter text-black">
+            The Board
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <p>{uniqueName}</p>
+          <div
+            className="flex cursor-pointer items-center justify-center rounded-md p-1 transition-colors duration-300 ease-in-out hover:bg-gray-100"
+            onClick={regenerateUniqueName}
+          >
+            <RefreshCcw className="h-3 w-3 text-gray-800" />
+          </div>
+        </div>
+        <HandleRight />
       </div>
       <div style={{ position: "absolute", inset: 0 }} className="mt-[3.75rem]">
         <Tldraw
